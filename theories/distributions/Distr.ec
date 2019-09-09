@@ -862,8 +862,12 @@ apply/eq_distr=> x; rewrite dlet1E dnull1E (@sumE_fin _ []) //= => x0.
 by rewrite dnull1E.
 qed.
 
-lemma dlet_d_dnull (d:'a distr): dlet d (fun a => dnull<:'b>) = dnull.
+lemma dlet_d_dnull (d : 'a distr): dlet d (fun a => dnull<:'b>) = dnull.
 proof. by apply/eq_distr=> x; rewrite dlet1E dnull1E /= (@sumE_fin _ []). qed.
+
+lemma eq_dlet ['a 'b] (F1 F2 : 'a -> 'b distr) d1 d2 :
+  d1 = d2 => F1 == F2 => dlet d1 F1 = dlet d2 F2.
+proof. by move=> -> eq_F; congr; apply/fun_ext. qed.
 
 (* -------------------------------------------------------------------- *)
 abbrev dlift (F: 'a -> 'b distr) : 'a distr -> 'b distr =
@@ -930,6 +934,20 @@ lemma dmap_fu (d : 'a distr) (f : 'a -> 'b) :
 proof. 
   move=> fsurj fu x;rewrite supp_dmap.
   have [a ->]:= fsurj x;exists a => /=;apply fu.
+qed.
+
+lemma dmap_dunit ['a 'b] (f : 'a -> 'b) (x : 'a) :
+  dmap (dunit x) f = dunit (f x).
+proof. by apply/eq_distr=> y; rewrite dmap1E !dunitE. qed.
+
+lemma dmap_id (d: 'a distr) : dmap d (fun x=>x) = d.
+proof. by rewrite /dmap /(\o) dlet_d_unit. qed.
+
+lemma dmap_comp ['a 'b 'c] (f : 'a -> 'b) (g : 'b -> 'c) d :
+ dmap (dmap d f) g = dmap d (g \o f).
+proof.
+rewrite /dmap dlet_dlet &(eq_dlet) //=.
+by move=> x @/(\o) /=; rewrite dlet_unit.
 qed.
 
 (* -------------------------------------------------------------------- *)
@@ -1134,6 +1152,26 @@ proof.
 + by move: (h (witness, x)); rewrite supp_dprod.
 + by rewrite supp_dprod !(ha, hb).
 qed.
+
+lemma dprod_dlet ['a 'b] (da : 'a distr) (db : 'b distr):
+  da `*` db = dlet da (fun a => dlet db (fun b => dunit (a, b))).
+proof.
+apply/eq_distr; case=> a b; rewrite dprod1E dlet1E /=.
+rewrite (@sumE_fin _ [a]) //= => [a'|].
++ rewrite dlet1E (@sumE_fin _ [b]) //= => [b'|].
+  + by rewrite dunitE /pred1 /= mulf_eq0 /#.
+  by rewrite big_seq1 /= dunitE !mulf_eq0 /#.
+rewrite big_seq1 /= dlet1E  (@sumE_fin _ [b]) //= => [b'|].
++ by rewrite dunitE /pred1 /= mulf_eq0 /#.
+by rewrite big_seq1 /= dunitE.
+qed.
+
+lemma dmap_dprod_comp ['a 'b 'c 'd 'e]
+  (d1 : 'a distr) (d2 : 'b distr) (f1 : 'a->'c) (f2 : 'b->'d) (f : 'c * 'd -> 'e)
+:
+    dmap (dmap d1 f1 `*` dmap d2 f2) f
+  = dmap (d1 `*` d2) (fun xy : _ * _ => f (f1 xy.`1, f2 xy.`2)).
+proof. admitted.
 
 (* -------------------------------------------------------------------- *)
 op E ['a] (d : 'a distr) (f : 'a -> real) =

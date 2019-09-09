@@ -2335,6 +2335,12 @@ elim: s1 s2 => [|x s1 ih] [|y s2] //=; 1,2,3: smt(size_ge0).
 by move/addzI=> eq_sz; rewrite !(rev_cons, zip_rcons) ?size_rev // ih.
 qed.
 
+lemma mem_zip ['a 'b] xs ys (x : 'a) (y : 'b):
+  (x, y) \in zip xs ys => x \in xs /\ y \in ys.
+proof.
+by elim: xs ys => [|x0 xs ih] [|y0 ys] //=; case=> [|/ih] [] 2!->.
+qed.
+
 (* -------------------------------------------------------------------- *)
 (*                            All pairs                                 *)
 (* -------------------------------------------------------------------- *)
