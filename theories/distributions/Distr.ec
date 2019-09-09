@@ -1166,12 +1166,16 @@ rewrite big_seq1 /= dlet1E  (@sumE_fin _ [b]) //= => [b'|].
 by rewrite big_seq1 /= dunitE.
 qed.
 
-lemma dmap_dprod_comp ['a 'b 'c 'd 'e]
-  (d1 : 'a distr) (d2 : 'b distr) (f1 : 'a->'c) (f2 : 'b->'d) (f : 'c * 'd -> 'e)
+lemma dmap_dprod ['a1 'a2 'b1 'b2]
+  (d1 : 'a1 distr ) (d2 : 'a2 distr )
+  (f1 : 'a1 -> 'b1) (f2 : 'a2 -> 'b2)
 :
-    dmap (dmap d1 f1 `*` dmap d2 f2) f
-  = dmap (d1 `*` d2) (fun xy : _ * _ => f (f1 xy.`1, f2 xy.`2)).
-proof. admitted.
+    dmap d1 f1 `*` dmap d2 f2
+  = dmap (d1 `*` d2) (fun xy : _ * _ => (f1 xy.`1, f2 xy.`2)).
+proof.
+apply/eq_distr=> -[b1 b2]; rewrite !dprod1E !dmap1E /(\o) /=.
+by rewrite -dprodE &(mu_eq) /= => -[a1 a2] @/pred1 /=; rewrite andabP.
+qed.
 
 (* -------------------------------------------------------------------- *)
 op E ['a] (d : 'a distr) (f : 'a -> real) =
