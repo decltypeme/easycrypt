@@ -1,121 +1,107 @@
 (* -------------------------------------------------------------------- *)
-require import AllCore List Distr DProd Ring StdBigop StdRing StdOrder.
+require import AllCore List Distr Ring StdBigop StdRing StdOrder.
 (*---*) import IntID Bigreal Bigreal.BRM.
 
 pragma -oldip.
+pragma +implicits.
+
 
 (* -------------------------------------------------------------------- *)
-op djoin (ds : 'a distr list) : 'a list distr =
- foldr
-   (fun d1 dl => dapply (fun xy : _ * _ => xy.`1 :: xy.`2) (d1 `*` dl))
-   (dunit []) ds
- axiomatized by djoin_axE.
+abstract theory JoinSampling.
+type ta.
 
-lemma djoin_nil ['a]: djoin<:'a> [] = dunit [].
-proof. by rewrite djoin_axE. qed.
+module S = {
+  proc sample(ds : ta distr list): ta list = {
+    var rs;
 
-lemma djoin_cons (d : 'a distr) (ds : 'a distr list): 
- djoin (d :: ds) = dapply (fun xy : _ * _ => xy.`1 :: xy.`2) (d `*` djoin ds).
-proof. by rewrite !djoin_axE. qed.
+    rs <$ djoin ds;
+    return rs;
+  }
 
-hint rewrite djoinE : djoin_nil djoin_cons.
+  proc loop(ds : ta distr list): ta list = {
+    var i, r, l;
 
-lemma djoin1E (ds : 'a distr list) xs: mu1 (djoin ds) xs =
-  if   size ds = size xs
-  then BRM.big predT (fun xy : _ * _ => mu1 xy.`1 xy.`2) (zip ds xs)
-  else 0%r.
+    i <- size ds - 1;
+    l <- [];
+    while (0 <= i) {
+      r <$ (nth witness ds i);
+      l <- r :: l;
+      i <- i - 1;
+    }
+    return l;
+  }
+}.
+
+(* -------------------------------------------------------------------- *)
+lemma pr_sample ds0 &m xs:
+  Pr[S.sample(ds0) @ &m: res = xs] = mu (djoin ds0) (pred1 xs).
+proof. by byphoare (_: ds = ds0 ==> res = xs)=> //=; proc; rnd. qed.
+
+(* -------------------------------------------------------------------- *)
+lemma pr_loop ds0 &m xs:
+  Pr[S.loop(ds0) @ &m: res = xs] = mu (djoin ds0) (pred1 xs).
 proof.
-elim: ds xs => [|d ds ih] xs /=; 1: rewrite djoin_nil dunitE.
-+ by case: xs => [|x xs] /=; [rewrite big_nil | rewrite add1z_neqC0 1:size_ge0].
-rewrite djoin_cons /= dmap1E /(\o) /=; case: xs => [|x xs] /=.
-+ by rewrite add1z_neq0 1:size_ge0 /= mu0_false.
-rewrite -(@mu_eq _ (pred1 (x, xs))).
-+ by case=> y ys @/pred1 /=; rewrite andabP.
-rewrite dprod1E ih big_cons /predT /=; pose B := big _ _ _.
-by rewrite (fun_if (( * ) (mu1 d x))) /= /#.
-qed.
+byphoare => //; proc; sp.
+while (l = drop (i+1) (take (i+1) xs)) i 3 0%r.
++ move=> &hr [-> ->] /=. admit.
++ move=> &hr i ys. admit.
++ move=> _ i ys.
 
-lemma djoin_nil1E (ds : 'a list):
-  mu1 (djoin []) ds = b2r (ds = []).
-proof. by rewrite djoinE /= dunit1E (@eq_sym ds). qed.
+smt.
+search drop size.
 
-lemma djoin_cons1E (d : 'a distr) (ds : 'a distr list) x xs :
-  mu1 (djoin (d :: ds)) (x :: xs) = mu1 d x * mu1 (djoin ds) xs.
-proof. by rewrite /= djoin_cons /= dmap1E -dprod1E &(mu_eq) => -[] /#. qed.
+admit.
+admit.
+move=> &hr i ds.
 
-lemma djoin_cons1nilE (d : 'a distr) (ds: ('a distr) list):
-  mu1 (djoin (d::ds)) [] = 0%r.
-proof. by rewrite djoin1E /= add1z_neq0 //= size_ge0. qed.
+move=> z.
+admit.
 
-lemma supp_djoin (ds : 'a distr list) xs : xs \in djoin ds <=>
-  size ds = size xs /\ all (fun (xy : _ * _) => support xy.`1 xy.`2) (zip ds xs).
+ by byphoare (_: ds = ds0 ==> res = xs)=> //=; proc; rnd. qed.
+
+(* -------------------------------------------------------------------- *)
+equiv Sample_Loop_eq: S.sample ~ S.loop: ={ds} ==> ={res}.
 proof.
-rewrite supportP djoin1E; case: (size ds = size xs) => //= eq_sz; split.
-+ apply: contraR; rewrite -has_predC => /hasP[] @/predC [d x] /=.
-  case=> hmem xNd; apply/prodr_eq0; exists (d, x) => @/predT /=.
-  by rewrite hmem /= -supportPn.
-+ apply: contraL => /prodr_eq0[] @/predT [d x] /= [hmem xNd].
-  rewrite -has_predC &(hasP); exists (d, x).
-  by rewrite hmem /predC /= supportPn.
+
+
+exists* ds{1}; elim* => _ds.
+move: (eq_refl _ds); elim: _ds => //=.
+ proc*; inline *; rcondf{2} 4; auto; smt (supp_djoin_nil weight_djoin_nil).
+move=> _d _ds IH.
+proc*; call (_: _d::_ds = ds{1} /\ ={ds} ==> ={res}) => //=.
+transitivity SampleCons.sample
+             (0 < size ds{1} /\ ={ds}  ==> ={res})
+             (={ds} /\ _d::_ds = ds{1} ==> ={res})=> //=.
++ move => *; exists (_d::_ds); move: H; progress; smt(size_ge0).
++ by conseq Sample_SampleCons_eq.
++ proc.
+  splitwhile{2} 3: (0 < i).
+  rcondt{2} 4.
+   progress; wp; while (0 <= i).
+    wp; rnd; skip; progress; smt().
+   wp; skip; progress; smt(size_ge0).
+  rcondf{2} 7.
+   progress; wp; rnd; while (0 <= i).
+    wp; rnd; skip; progress; smt().
+   wp; skip; progress; smt(size_ge0).
+  swap{1} 1 1.
+  wp; rnd.  
+  transitivity{1} { rs <@ Sample.sample(behead ds); }
+                  ( ={ds} ==> ={rs,ds})
+                  ( _d::_ds = ds{1} /\ ={ds} ==> ={ds} /\ rs{1} = l{2} /\ i{2} = 0)=> //=.
+  - by progress; exists (_d::_ds); progress.
+  - progress; smt().
+  - by inline*; wp; rnd; wp; skip; progress.
+  - transitivity{1} { rs <@ Loop.sample(behead ds); }
+                    ( _d::_ds = ds{1} /\ ={ds} ==> ={ds,rs})
+                    ( _d::_ds = ds{1} /\ ={ds} ==> ={ds} /\ rs{1} = l{2} /\ i{2}=0)=> //=; 1:smt.
+     by call IH; skip; progress.
+    inline*; wp.
+    while (={l,ds} /\ ds0{1} = behead ds{1} /\ i{2}=i{1}+1 /\  0 <= i{2}).
+     wp; rnd; skip; progress. 
+     + rewrite nth_behead; smt().
+     + move: H4; rewrite nth_behead; smt(). 
+     + smt(). smt().
+    wp; skip; progress; smt(size_ge0).
 qed.
-
-lemma weight_djoin (ds : 'a distr list) :
-  weight (djoin ds) = BRM.big predT weight ds.
-proof.
-elim: ds => [|d ds ih]; rewrite djoinE /=.
-+ by rewrite dunit_ll big_nil.
-+ by rewrite weight_dmap weight_dprod big_cons -ih.
-qed.
-
-lemma djoin_ll (ds : 'a distr list):
-  (forall d, d \in ds => is_lossless d) => is_lossless (djoin ds).
-proof.
-move=> ds_ll; rewrite /is_lossless weight_djoin.
-rewrite big_seq -(eq_bigr _ (fun _ => 1%r)) /=.
-+ by move=> d /ds_ll ll_d; apply/eq_sym.
-+ by rewrite -(@big_seq _ ds) mulr_const RField.expr1z.
-qed.
-
-lemma weight_djoin_nil: weight (djoin<:'a> []) = 1%r.
-proof. by rewrite weight_djoin big_nil. qed.
-
-lemma weight_djoin_cons d (ds:'a distr list):
-  weight (djoin (d :: ds)) = weight d * weight (djoin ds).
-proof. by rewrite weight_djoin big_cons -weight_djoin. qed.
-
-lemma djoin_nilE P : mu (djoin<:'a> []) P = b2r (P []).
-proof. by rewrite djoin_nil // dunitE. qed.
-
-lemma djoin_consE (dflt:'a) (d: 'a distr) ds P Q :
-    mu
-      (djoin (d :: ds))
-      (fun xs => P (head dflt xs) /\ Q (behead xs))
-  = mu d P * mu (djoin ds) Q.
-proof. by rewrite djoin_cons /= dmapE dprodE. qed.
-
-lemma djoin_fu (ds : 'a distr list) (xs : 'a list): 
-     size ds = size xs
-  => (forall d x, d \in ds => x \in d)
-  => xs \in djoin ds.
-proof. 
-move=> eq_sz hfu; rewrite supportP djoin1E eq_sz /=.
-rewrite RealOrder.gtr_eqF // Bigreal.prodr_gt0_seq.
-case=> d x /= /mem_zip [d_ds x_xs] _.
-by rewrite supportP -supportPn /=; apply: hfu.
-qed.
-
-lemma djoin_uni (ds:'a distr list): 
-  (forall d, d \in ds => is_uniform d) => is_uniform (djoin ds).
-proof.
-elim: ds => [|d ds ih] h //=; rewrite !djoinE; 1: by apply/dunit_uni.
-rewrite dmap_uni => [[x xs] [y ys] /= [2!->//]|].
-apply: dprod_uni; [apply/h | apply/ih] => //.
-by move=> d' hd'; apply/h => /=; rewrite hd'.
-qed.
-
-lemma djoin_dmap ['a 'b 'c] (d : 'a -> 'b distr) (xs : 'a list) (f : 'b -> 'c):
-  dmap (djoin (map d xs)) (map f) = djoin (map (fun x => dmap (d x) f) xs).
-proof.
-elim: xs => [|x xs ih]; rewrite ?djoinE ?dmap_dunit //=.
-by rewrite !djoin_cons -ih /= dmap_dprod /= !dmap_comp.
-qed.
+end JoinSampling.
