@@ -572,13 +572,4 @@ qed.
 
 lemma nosmt modz_pow2_div n p i: 0 <= i => 0 <= p <= n =>
   (i %% 2^n) %/ 2^p = (i %/ 2^p) %% 2^(n-p).
-proof.
-move=> ge0_i le_pn; apply: (@mulIf (2 ^ p)).
-  admit.
-have := modz_pow_split n p i 2 le_pn.
-
-move=> ge0_i [ge0_p le_pn]; rewrite (@modzE _ (2 ^ n)) divzDr.
-  by rewrite dvdzN dvdz_mull dvdz_exp2l ge0_p.
-search (_ %/ _) (_ ^ _)%IntExtra.
-
- admit. qed.
+proof. admitted.
