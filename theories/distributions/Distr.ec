@@ -1234,6 +1234,10 @@ rewrite supportP djoin1E; case: (size ds = size xs) => //= eq_sz; split.
   by rewrite hmem /predC /= supportPn.
 qed.
 
+lemma supp_djoin_size (ds : 'a distr list) xs :
+  xs \in djoin ds => size xs = size ds.
+proof. by case/supp_djoin=> ->. qed.
+
 lemma weight_djoin (ds : 'a distr list) :
   weight (djoin ds) = BRM.big predT weight ds.
 proof.
