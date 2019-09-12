@@ -1295,6 +1295,14 @@ elim: xs => [|x xs ih]; rewrite ?djoinE ?dmap_dunit //=.
 by rewrite !djoin_cons -ih /= dmap_dprod /= !dmap_comp.
 qed.
 
+lemma supp_djoinmap ['a 'b] (d : 'a -> 'b distr) xs ys:
+  ys \in djoinmap d xs <=> size xs = size ys /\
+    all (fun xy => support (d (fst xy)) (snd xy)) (zip xs ys).
+proof.
+rewrite supp_djoin size_map; congr; apply/eq_iff.
+by rewrite zip_mapl all_map &(eq_all).
+qed.
+
 (* -------------------------------------------------------------------- *)
 op E ['a] (d : 'a distr) (f : 'a -> real) =
   sum (fun x => f x * mass d x).
