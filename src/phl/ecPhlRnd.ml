@@ -129,7 +129,10 @@ let wp_equiv_rnd_r bij tc =
     let tt =
       FApi.t_seqs
         [EcLowGoal.t_intros_n n;
-         EcLowGoal.t_auto ~bases:["random"] ~depth:2;
+         EcLowGoal.t_auto
+           ~mode:EcMatching.fmrigid
+           ~bases:["random"]
+           ~depth:2;
          EcLowGoal.t_fail] in
 
     let subtc, hd = FApi.newgoal tc f in

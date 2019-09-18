@@ -2156,7 +2156,9 @@ let t_smt ~(mode:smtmode) pi tc =
   else error ()
 
 (* -------------------------------------------------------------------- *)
-let t_auto ?(bases = [EcEnv.Auto.dname]) ?(depth = 1) (tc : tcenv1) =
+let t_auto
+  ?(mode = fmdelta) ?(bases = [EcEnv.Auto.dname]) ?(depth = 1) (tc : tcenv1)
+=
   let module E = struct
       exception Done of tcenv
       exception Fail
@@ -2177,7 +2179,7 @@ let t_auto ?(bases = [EcEnv.Auto.dname]) ?(depth = 1) (tc : tcenv1) =
 
     try
       FApi.t_seqs
-        [Apply.t_apply_bwd_r ~mode:fmdelta ~canview:false pt;
+        [Apply.t_apply_bwd_r ~mode ~canview:false pt;
          t_trivial; forall (ctn+1)]
         tc
 

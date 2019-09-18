@@ -313,4 +313,8 @@ type smtmode = [`Standard | `Strict | `Report of EcLocation.t option]
 val t_smt: mode:smtmode -> prover_infos -> FApi.backward
 
 (* -------------------------------------------------------------------- *)
-val t_auto : ?bases:symbol list -> ?depth:int -> FApi.backward
+val t_auto :
+     ?mode:EcMatching.fmoptions
+  -> ?bases:symbol list
+  -> ?depth:int
+  -> FApi.backward

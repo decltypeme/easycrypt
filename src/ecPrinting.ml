@@ -1506,6 +1506,7 @@ and try_pp_lossless (ppe : PPEnv.t) outer fmt f =
             in
               maybe_paren outer (fst outer, prio) pp fmt (); true
 
+(*
 and try_pp_notations (ppe : PPEnv.t) outer fmt f =
   let open EcMatching in
 
@@ -1558,6 +1559,7 @@ and try_pp_notations (ppe : PPEnv.t) outer fmt f =
   let nts = EcEnv.Op.get_notations ppe.PPEnv.ppe_env in
 
   List.exists try_notation nts
+*)
 
 and pp_form_core_r (ppe : PPEnv.t) outer fmt f =
   let pp_opapp ppe outer fmt (op, tys, es) =
@@ -1746,7 +1748,7 @@ and pp_form_core_r (ppe : PPEnv.t) outer fmt f =
 
 and pp_form_r (ppe : PPEnv.t) outer fmt f =
   let printers =
-    [try_pp_notations;
+    [(*try_pp_notations;*)
      try_pp_form_eqveq;
      try_pp_chained_orderings;
      try_pp_lossless]

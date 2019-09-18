@@ -377,6 +377,8 @@ let fmnotation = {
 
 (* -------------------------------------------------------------------- *)
 (* Rigid unification *)
+let i = ref 0
+
 let f_match_core opts hyps (ue, ev) ~ptn subject =
   let ue  = EcUnify.UniEnv.copy ue in
   let ev  = ref ev in
@@ -388,7 +390,20 @@ let f_match_core opts hyps (ue, ev) ~ptn subject =
 
   let conv =
     match opts.fm_conv with
-    | true  -> EcReduction.is_conv hyps
+    | true  -> begin
+      fun f1 f2 ->
+        incr i;
+        if !i = 5 then begin
+          let ppe = EcPrinting.PPEnv.ofenv (EcEnv.LDecl.baseenv hyps) in
+          Format.eprintf "[1]%a@." (EcPrinting.pp_form ppe) f1;
+          Format.eprintf "[2]%a@." (EcPrinting.pp_form ppe) f2
+        end;
+        Printf.printf "-->\n%!";
+        let t, b = EcUtils.timed (fun () -> EcReduction.is_conv hyps f1 f2) () in
+        Printf.eprintf "%.2f\n%!" t;
+        Printf.printf "<--\n%!";
+        b
+      end
     | false -> EcReduction.is_alpha_eq hyps
   in
 
