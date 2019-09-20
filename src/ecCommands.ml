@@ -372,6 +372,10 @@ and process_th_require1 ld scope (x, io) =
         Loader.push    filename subld;
         Loader.addidir dirname  subld;
 
+        let name = {
+            EcScope.rqd_name = name;
+            rqd_digest = Digest.file filename; } in
+
         let loader iscope =
           let i_pragma = !pragma in
 
@@ -388,8 +392,8 @@ and process_th_require1 ld scope (x, io) =
         let scope = EcScope.Theory.require scope (name, kind) loader in
           match io with
           | None         -> scope
-          | Some `Export -> EcScope.Theory.export scope ([], name)
-          | Some `Import -> EcScope.Theory.import scope ([], name)
+          | Some `Export -> EcScope.Theory.export scope ([], name.rqd_name)
+          | Some `Import -> EcScope.Theory.import scope ([], name.rqd_name)
 
 (* -------------------------------------------------------------------- *)
 and process_th_require ld scope (xs, io) =

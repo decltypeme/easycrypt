@@ -243,6 +243,19 @@ let main () =
        | None     -> EcCommands.addidir Filename.current_dir_name
        | Some pwd -> EcCommands.addidir pwd);
 
+  let finalize_input input scope =
+    match input with
+    | Some input ->
+      let nameo = Filename.remove_extension input ^ ".eco" in
+      let digest  = Digest.file input in
+      let required = EcScope.Theory.required scope in
+      let out = open_out_bin nameo in
+      Marshal.to_channel out (digest, required) [];
+      close_out out
+    | None -> ()
+  in
+
+
   let tstats : EcLocation.t -> float option -> unit =
     match options.o_command with
     | `Compile { cmpo_tstats = Some out } ->
@@ -344,7 +357,11 @@ let main () =
               EcCommands.undo i
         end;
         EcTerminal.finish `ST_Ok terminal;
-        if !terminate then (EcTerminal.finalize terminal; exit 0);
+        if !terminate then begin
+            EcTerminal.finalize terminal;
+            finalize_input input (EcCommands.current ());
+            exit 0
+          end;
       with
       | EcCommands.Restart ->
           first := `Restart
